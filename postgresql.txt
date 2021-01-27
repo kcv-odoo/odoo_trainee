@@ -1,0 +1,159 @@
+select * from cd.facilities;      
+
+select name, membercost from cd.facilities;
+
+select * from cd.facilities where membercost>0;
+
+select facid, name, membercost, monthlymaintenance 
+	from cd.facilities 
+	where 
+		membercost > 0 and 
+		(membercost < monthlymaintenance/50.0);  
+		
+select * from cd.facilities where name like '%Tennis%';
+
+select * from cd.facilities where facid in (1,5)
+
+select name, case when (monthlymaintenance > 100) then 'expensive' else 'cheap' end as cost
+	from cd.facilities;  
+	
+select memid, surname, firstname, joindate from cd.members where joindate>='2012-09-01'; //timestamp in descanding order 'yyyy-mm-dd'
+
+select distinct surname from cd.members order by surname limit 10;
+
+select surname from cd.members union select name from cd.facilities;
+
+select max(joindate) as latest from cd.members;
+
+select firstname, surname, joindate from cd.members order by joindate desc limit 1;
+
+
+-------------------------------------joins and subqueries-----------------------------------
+
+select bk.starttime from cd.bookings bk inner join cd.members mem on mem.memid=bk.memid where mem.firstname='David' and mem.surname='Farrell';
+
+
+select bks.starttime as start, facs.name as name
+	from 
+	cd.facilities facs
+	inner join cd.bookings bks
+	on facs.facid = bks.facid
+	where 
+	facs.name in ('Tennis Court 2','Tennis Court 1') and
+	bks.starttime >= '2012-09-21' and
+	bks.starttime < '2012-09-22'  
+	order by bks.starttime;          
+
+
+
+select distinct recs.firstname as firstname, recs.surname as surname from cd.members mems inner join cd.members recs on recs.memid=mems.recommendedby order by surname, firstname;
+
+
+select mems.firstname as memfname, mems.surname as memsname, recs.firstname as recfname, recs.surname as recsname from cd.members mems left outer join cd.members recs on recs.memid = mems.recommendedby
+order by memsname, memfname; 
+
+
+
+select mems.firstname || ' ' || mems.surname as member, 
+	facs.name as facility, 
+	case 
+		when mems.memid = 0 then
+			bks.slots*facs.guestcost
+		else
+			bks.slots*facs.membercost
+	end as cost
+        from
+                cd.members mems                
+                inner join cd.bookings bks
+                        on mems.memid = bks.memid
+                inner join cd.facilities facs
+                        on bks.facid = facs.facid
+        where
+		bks.starttime >= '2012-09-14' and 
+		bks.starttime < '2012-09-15' and (
+			(mems.memid = 0 and bks.slots*facs.guestcost > 30) or
+			(mems.memid != 0 and bks.slots*facs.membercost > 30)
+		)
+order by cost desc;          
+
+
+select distinct mems.firstname || ' ' || mems.surname as member, (select recs.firstname || ' ' || recs.surname as recommender from cd.members recs where recs.memid=mems.recommendedby) from cd.members mems order by member;
+
+
+
+select member, facility, cost from (
+	select 
+		mems.firstname || ' ' || mems.surname as member,
+		facs.name as facility,
+		case
+			when mems.memid = 0 then
+				bks.slots*facs.guestcost
+			else
+				bks.slots*facs.membercost
+		end as cost
+		from
+			cd.members mems
+			inner join cd.bookings bks
+				on mems.memid = bks.memid
+			inner join cd.facilities facs
+				on bks.facid = facs.facid
+		where
+			bks.starttime >= '2012-09-14' and
+			bks.starttime < '2012-09-15'
+	) as bookings
+	where cost > 30
+order by cost desc;  
+
+------------------modifying data (insert,update,delete)---------------------------------
+
+insert into cd.facilities values (9, 'Spa', 20, 30, 100000, 800);
+
+
+insert into cd.facilities
+    (facid, name, membercost, guestcost, initialoutlay, monthlymaintenance)
+    values
+        (9, 'Spa', 20, 30, 100000, 800),
+        (10, 'Squash Court 2', 3.5, 17.5, 5000, 80);     
+        
+        
+insert into cd.facilities
+    (facid, name, membercost, guestcost, initialoutlay, monthlymaintenance)
+    select (select max(facid) from cd.facilities)+1, 'Spa', 20, 30, 100000, 800;   
+    
+    
+update cd.facilities set initialoutlay=10000 where facid=1;
+
+
+update cd.facilities
+    set
+        membercost = 6,
+        guestcost = 30
+    where facid in (0,1);  
+    
+    
+update cd.facilities facs
+    set
+        membercost = (select membercost * 1.1 from cd.facilities where facid = 0),
+        guestcost = (select guestcost * 1.1 from cd.facilities where facid = 0)
+    where facs.facid = 1;         
+    
+    
+delete from cd.bookings;
+
+
+
+delete from cd.members where memid = 37;   
+
+
+delete from cd.members where memid not in (select memid from cd.bookings);
+
+
+
+
+
+
+
+
+
+
+

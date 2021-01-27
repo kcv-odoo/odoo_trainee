@@ -1,0 +1,138 @@
+--------------------------------------------------select--------------------------
+select first_name ,last_name from customer;
+
+select *  from customer;
+
+-----------------alias-------------------------------
+select first_name|| ' ' ||last_name from customer;
+
+select first_name ,last_name as surname from customer;
+
+
+-----------------------union, intersect, except--------------------------
+select *from top_rated_films union select *from most_popular_films
+
+select * from most_popular_films intersect select * from top_rated_films;
+
+select * from top_rated_films except select * from most_popular_films;
+
+----------------------------Grouping sets, Cube, and Rollup-------------------
+select brand,segment,sum(quantity) from sales group by cube(brand,segment) order by brand, segment;
+
+select brand,segment,sum(quantity) from sales group by brand, segment;
+
+select brand,segment,sum(quantity) from sales group by rollup(brand,segment) order by brand,segment;
+
+
+--------------------------------subquery------------------------------------------
+select avg(rental_rate) from film;
+
+select film_id,title,rental_rate from film where rental_rate>2.98;
+
+select film_id,title,rental_rate from film where rental_rate>(select avg(rental_rate) from film);
+
+select film_id,title from film where film_id in (select inventory.film_id from rental inner join inventory on inventory.inventory_id = rental.inventory_id where return_date between '2005-05-29' and '2005-05-30');
+
+select title from film where length>=any(select max(length) from film inner join film_category using(film_id) group by category_id);
+
+
+select round(avg(length),2) avg_length from film group by rating order by avg_length desc;
+
+select film_id,title,length from film where length >all(select round(avg(length),2) from film group by rating) order by length;
+
+select first_name,last_name from customer c where exists (select 1 from payment p where p.customer_id=c.customer_id and amount>11) order by first_name,last_name;
+
+
+select first_name, last_name from customer c where not exists (select 1 from payment p where p.customer_id=c.customer_id and amount>11) order by first_name, last_name;
+
+
+------------------------------------modifying data--------------------------------------
+
+insert into links(url,name) values(https://www.postgresqltutorial.com','PostgreSQL Tutorial');
+
+
+INSERT INTO links (url, name)
+VALUES('http://www.postgresql.org','PostgreSQL') 
+RETURNING id;
+
+INSERT INTO 
+    links(url,name, description)
+VALUES
+    ('https://duckduckgo.com/','DuckDuckGo','Privacy & Simplified Search Engine'),
+    ('https://swisscows.com/','Swisscows','Privacy safe WEB-search')
+RETURNING *;
+
+
+
+create table courses(
+   course_id serial primary key,
+   course_name varchar(255) not null,
+   description varchar(500),
+   published_date date);
+
+
+update courses
+dvdrental-# set published_date = '2020-08-01'
+dvdrental-# where course_id=3;
+
+
+UPDATE courses
+SET published_date = '2020-07-01'
+WHERE course_id = 2
+RETURNING *;
+
+
+ update product set net_price=price-price*segment from product_segment where product.segment_id=product_segment.id;
+
+delete from links where id=7 returning *;
+
+
+DELETE FROM links
+WHERE id IN (6,5)
+RETURNING *;
+
+
+INSERT INTO customers (name, email)
+VALUES('Microsoft','hotline@microsoft.com') 
+ON CONFLICT (name) 
+DO 
+   UPDATE SET email = EXCLUDED.email || ';' || customers.email;
+   
+   
+ ------------------------------------transection-------------------------
+ 
+ begin;
+BEGIN
+update accounts set balance=balance - 1500 where id=1;
+UPDATE 1
+update accounts set balance=balance+1500 where id=3;
+UPDATE 0
+dvdrental=*# rollback;
+
+
+
+
+-- start a transaction
+BEGIN;
+
+-- deduct 1000 from account 1
+UPDATE accounts 
+SET balance = balance - 1000
+WHERE id = 1;
+
+-- add 1000 to account 2
+UPDATE accounts
+SET balance = balance + 1000
+WHERE id = 2; 
+
+-- select the data from accounts
+SELECT id, name, balance
+FROM accounts;
+
+-- commit the transaction
+COMMIT;
+
+
+
+
+
